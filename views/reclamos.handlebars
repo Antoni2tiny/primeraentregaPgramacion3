@@ -1,0 +1,10 @@
+<h2>Gestionar Reclamos</h2>
+<p>Aquí podrá cargar y gestionar los reclamos.</p>
+<!-- Formulario para carga de reclamos -->
+<form action="/reclamos/nuevo" method="post">
+    <label for="asunto">Asunto del Reclamo:</label><br>
+    <input type="text" id="asunto" name="asunto" required><br>
+    <label for="descripcion">Descripción:</label><br>
+    <textarea id="descripcion" name="descripcion" required></textarea><br>
+    <button type="submit">Cargar Reclamo</button>
+</form>
