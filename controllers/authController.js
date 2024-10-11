@@ -1,63 +1,50 @@
-// Importamos la conexión a la base de datos y las funciones de autenticación
-const db = require('../baseDatos');
-const { hashPassword, verifyPassword, generateToken } = require('../autenticacion');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const db = require('../bd/bd'); 
 
 // Función para registrar un nuevo usuario
-const registerUser = (req, res) => {
-    // Extraemos los datos del cuerpo de la solicitud
-    const { nombre, apellido, correoElectronico, contrasenia, idTipoUsuario } = req.body;
-    
-    // Hash de la contraseña para almacenarla de forma segura
-    const hashedPassword = hashPassword(contrasenia);
+const registrarUsuario = async (req, res) => {
+  const { nombre, apellido, correoElectronico, contrasenia, idTipoUsuario } = req.body;
 
-    // Consulta SQL para insertar un nuevo usuario en la base de datos
-    const query = 'INSERT INTO usuarios (nombre, apellido, correoElectronico, contrasenia, idTipoUsuario) VALUES (?, ?, ?, ?, ?)';
+  
+  db.query('SELECT * FROM usuarios WHERE correoElectronico = ?', [correoElectronico], async (err, results) => {
+    if (err) return res.status(500).send('Error en la base de datos');
+    if (results.length > 0) return res.status(400).send('Correo ya en uso');
+
+   
+    const hashedPassword = await bcrypt.hash(contrasenia, 10);
+
     
-    // Ejecutamos la consulta
-    db.query(query, [nombre, apellido, correoElectronico, hashedPassword, idTipoUsuario], (err, results) => {
-        if (err) 
-            // Si ocurre un error al registrar, enviamos una respuesta con el código 500
-            return res.status(500).json({ error: 'Error al registrar el usuario' });
-        
-        // Si el registro es exitoso, redirigimos al usuario a la página de inicio de sesión
-        res.status(201).redirect('/login');
+    db.query('INSERT INTO usuarios (nombre, apellido, correoElectronico, contrasenia, idTipoUsuario) VALUES (?, ?, ?, ?, ?)', 
+      [nombre, apellido, correoElectronico, hashedPassword, idTipoUsuario], (err) => {
+      if (err) return res.status(500).send('Error al registrar usuario');
+      res.status(201).send('Usuario registrado con éxito');
     });
+  });
 };
 
-// Función para iniciar sesión
-const loginUser = (req, res) => {
-    // Extraemos el correo electrónico y la contraseña del cuerpo de la solicitud
-    const { correoElectronico, contrasenia } = req.body;
+// Función para iniciar sesión y generar el token JWT
+const iniciarSesion = (req, res) => {
+  const { correoElectronico, contrasenia } = req.body;
+  
 
-    // Consulta SQL para buscar al usuario por correo electrónico
-    const query = 'SELECT * FROM usuarios WHERE correoElectronico = ?';
+  // Buscar al usuario por su correo electrónico
+  db.query('SELECT * FROM usuarios WHERE correoElectronico = ?', [correoElectronico], async (err, results) => {
+    if (err) return res.status(500).send('Error en la base de datos');
+    if (results.length === 0) return res.status(400).send('Correo o contraseña incorrectos');
+
+    const usuario = results[0];
+
+    // Comparar la contraseña ingresada con la contraseña hasheada en la base de datos
+    const esContraseñaValida = await bcrypt.compare(contrasenia, usuario.contrasenia);
+    if (!esContraseñaValida) return res.status(400).send('Correo o contraseña incorrectos');
+
+    // Generar un token JWT
+    const token = jwt.sign({ idUsuario: usuario.idUsuario, idTipoUsuario: usuario.idTipoUsuario }, 'secret_key', { expiresIn: '1h' });
     
-    // Ejecutamos la consulta
-    db.query(query, [correoElectronico], (err, results) => {
-        if (err) 
-            // Si ocurre un error en la consulta, respondemos con el código 500
-            return res.status(500).json({ error: 'Error al iniciar sesión' });
-        
-        if (results.length === 0) 
-            // Si no se encuentra un usuario con ese correo, respondemos con error 401 (no autorizado)
-            return res.status(401).json({ error: 'Usuario no encontrado' });
-
-        const user = results[0]; // Obtenemos los datos del usuario encontrado
-
-        // Verificamos si la contraseña ingresada coincide con la almacenada
-        if (!verifyPassword(contrasenia, user.contrasenia)) 
-            // Si la contraseña no coincide, respondemos con error 401
-            return res.status(401).json({ error: 'Contraseña incorrecta' });
-
-        // Si la verificación es exitosa, generamos un token para la sesión
-        const token = generateToken(user);
-        
-        // Almacenamos el token en una cookie y redirigimos al usuario a la página principal
-        res.cookie('token', token);
-        res.redirect('/');
-    });
+    if (!usuario === 0) return res.status(200).send('Usuario logiado correctamente')
+    res.json({ token });
+  });
 };
 
-// Exportamos las funciones para que puedan ser utilizadas en otras partes de la aplicación
-module.exports = { registerUser, loginUser };
-
+module.exports = { registrarUsuario, iniciarSesion };
