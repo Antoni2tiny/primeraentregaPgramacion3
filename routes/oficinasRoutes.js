@@ -1,12 +1,15 @@
 import { Router } from 'express';
-import * as oficinasController from '../controller/oficinasController.js';
+import OficinasControlle from '../controller/oficinasController.js';
 
 const router = Router();
 
-router.get('/oficinas', oficinasController.getAllOficinas);
-router.get('/oficinas/:idOficina', oficinasController.getOficinasById);
-router.patch('/oficinas/:idOficina', oficinasController.updateOficinas);
-router.post('/oficinas', oficinasController.createOficinas);
-router.delete('/oficinas/:idOficina', oficinasController.deleteOficinas);
+const oficinasController = new OficinasControlle();
+
+router.get('/oficinas', oficinasController.buscarTodos);
+router.get('/oficinas/:idOficina', oficinasController.buscarPorId);
+router.patch('/oficinas/:idOficina', oficinasController.modificar);
+router.post('/oficinas', oficinasController.crear);
+router.delete('/oficinas/:idOficina', oficinasController.eliminar);
+router.post('/agregar-empleados', oficinasController.agregarEmpleados);
 
 export default router;
