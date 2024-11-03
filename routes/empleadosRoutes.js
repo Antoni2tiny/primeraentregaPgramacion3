@@ -1,12 +1,14 @@
 import { Router } from "express";
-import * as empleadosController from '../controller/empleadosController.js';
+import EmpleadosControlle from "../controller/empleadosController.js";
 
 const router = Router();
 
-router.get('/empleados', empleadosController.getAllEmpleados);
-router.get('/empleados/:idUsuario', empleadosController.getEmpleadoById);
-router.patch('/empleados/:idUsuario', empleadosController.updateEmpleadosById);
-router.post('/empleados', empleadosController.createEmpleado);
-router.delete('/empleados/:idUsuario', empleadosController.deleteEmpleado);
+const empleadosController = new EmpleadosControlle();
+
+router.get('/empleados', empleadosController.buscarTodos);
+router.get('/empleados/:idUsuario', empleadosController.buscarPorId);
+router.patch('/empleados/:idUsuario', empleadosController.modificar);
+router.post('/empleados', empleadosController.crearEmpleado);
+router.delete('/empleados/:idUsuario', empleadosController.eliminar);
 
 export default router;

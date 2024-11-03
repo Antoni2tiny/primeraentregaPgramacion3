@@ -14,7 +14,7 @@ export default class OficinasControlle{
 
         try{
             let plimit = limit ? Number(limit) : 0;
-            let poffset = offset ? Number(limit) : 0;
+            let poffset = offset ? Number(offset) : 0;
 
             const oficinas = await this.OficinasService.buscarTodos(plimit,poffset);
             

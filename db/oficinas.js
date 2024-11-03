@@ -7,7 +7,7 @@ export default class Oficinas{
         const sql = "SELECT * FROM `oficinas`";
 
         if(limit){
-            sql += 'LIMIT ? OFFSET ? ';
+            sql += ' LIMIT ? OFFSET ? ';
         }
 
         const [result] = await conexion.query(sql, [limit, offset]);
