@@ -1,137 +1,163 @@
-import {conexion} from '../db/conexion.js';
+import TiposReclamosService from "../service/tiposReclamosService.js";
 
-// GET
-export const getAllTiposReclamos = async (req, res) => {
-    try{
-        const sql = 'SELECT * FROM reclamos_tipo WHERE activo = 1';
+export default class TiposReclamosController{
 
-        const [result] = await conexion.query(sql);
-
-        res.status(200).json(result);
-
-    }catch(err){
-        res.status(500).json({
-            mensaje: "Error interno."
-        });
+    constructor(){
+        this.TiposReclamosService = new TiposReclamosService();
     }
-};
 
-// GET ID
-export const getReclamosTipoById = async (req, res) => {
-    try {
-        const { idReclamosTipo } = req.params;
+    buscarTodos = async (req, res) => {
+        
+        const limit = req.query.limit;
+        const offset = req.query.offset;
 
-        const sql = 'SELECT * FROM reclamos_tipo WHERE activo = 1 AND idReclamosTipo = ?;'; 
+        try{
+            let plimit = limit ? Number(limit) : 0;
+            let poffset = offset ? Number(offset) : 0;
 
-        const [result] = await conexion.query(sql, idReclamosTipo);
-
-        if (result.length === 0) {
-            return res.status(404).json({
-                mensaje: "No se encontró tipo reclamo."
+            const tiposReclamos = await this.TiposReclamosService.buscarTodos(plimit,poffset);
+    
+            res.status(200).json(tiposReclamos);
+    
+        }catch(err){
+            res.status(500).json({
+                mensaje: "Error interno."
             });
         }
+    };
+    
+    buscarPorId = async (req, res) => {
+        const idReclamosTipo = req.params.idReclamosTipo;
 
-        res.status(200).json(result);
-    } catch (err) {
-        res.status(500).json({
-            mensaje: "Error interno."
-        });
+        if (idUsuario === undefined) {
+            return res.status(400).send({
+                estado:"Falla",
+                mensaje:"Faltan datos obligatorios."
+            })
+        }
+
+        try {
+        
+            const reclamoTipo = await this.TiposReclamosService.buscarPotId(idReclamosTipo);
+    
+            if (reclamoTipo.length === 0) {
+                return res.status(404).json({
+                    mensaje: "No se encontró tipo reclamo."
+                });
+            }
+    
+            res.status(200).json(reclamoTipo);
+        } catch (err) {
+            res.status(500).json({
+                mensaje: "Error interno."
+            });
+        }
+    };
+    
+    modificar = async (req, res) => {
+        try {
+            const idReclamosTipo = req.params.idReclamosTipo;
+    
+            if (idReclamosTipo === undefined) {
+                return res.status(400).send({
+                    estado: "Falla",
+                    mensaje: "Falla datos obligatorios."
+                })
+            }
+
+            const datos = req.body;
+    
+            if (Object.keys(datos).length === 0) {
+                return res.status(400).send({
+                    esatado: "Falla",
+                    mensaje: "Nose enviaron datos pra ser modificados."
+                })
+            }    
+    
+            const tipoReclamoModoficado = await this.TiposReclamosService.modificar(idReclamosTipo,datos);
+    
+            if (tipoReclamoModoficado.estado) {
+                res.status(200).send({
+                    estado: "OK",
+                    mensaje: tipoReclamoModoficado.mensaje
+                });
+            }else{
+                res.status(404).send({
+                    estado: "Falla",
+                    mensaje: tipoReclamoModoficado.mensaje
+                });
+            }
+    
+        }catch (err) {
+            res.status(500).json({
+                mensaje: "Error interno."
+            });
+        }
     }
-};
-
-// PATCH
-export const updateReclamosTipoById = async (req, res) => {
-    try {
-
-        const {descripcion, activo} = req.body;
-
+    
+    crear = async (req,res) => {
+    
+        const {descripcion} = req.body;
+    
         if(!descripcion) {
             return res.status(400).json({
                 mensaje:"Se requiere el campo descipcion."
             })
         }
 
-        if (activo === undefined || activo === null){
-            return res.status(400).json({ 
-                mensaje: "Se requiere el campo activo."    
-            })
+        try {
+            
+            const tipoReclamo = {descripcion}
+
+            const nuevoTipoReclamo = await this.TiposReclamosService.crear(tipoReclamo);
+    
+            if(nuevoTipoReclamo.affectedRows === 0){
+                return res.status(404).json({
+                    mensaje: "No se pudo crear."
+                })
+            }
+    
+            res.status(200).json({
+                mensaje: "Tipo reclamo creado."
+            });
+    
+        }catch (err) {
+            res.status(500).json({
+                mensaje: "Error interno."
+            });
         }
-
-        const {idReclamosTipo} = req.params;
-
-        const sql = 'UPDATE reclamos_tipo SET descripcion = ? , activo = ?  WHERE idReclamosTipo = ?';
-        const [result] = await conexion.query(sql, [descripcion,activo,idReclamosTipo]);
-
-        if(result.affectedRows === 0){
-            return res.status(404).json({
-                mensaje: "No se pudo modificar."
-            })
-        }
-
-        res.status(200).json({
-            mensaje: "Tipo reclamo modificado."
-        });
-
-    }catch (err) {
-        res.status(500).json({
-            mensaje: "Error interno."
-        });
     }
-}
-
-// POST
-export const createTiposReclamos = async (req,res) => {
-
-    try {
-    const {descripcion} = req.body;
-
-        if(!descripcion) {
-            return res.status(400).json({
-                mensaje:"Se requiere el campo descipcion."
+    
+    eliminar = async (req, res) => {
+        const idReclamosTipo = req.params.idReclamosTipo;
+        if (idUsuario === undefined) {
+            return res.status(400).send({
+                estado:"Falla",
+                mensaje:"Falla datos obligatorios."
             })
         }
 
-        const sql = 'INSERT INTO reclamos_tipo (descripcion, activo) VALUES (?, 1);';
-        const [result] = await conexion.query(sql, [descripcion]);
-
-        if(result.affectedRows === 0){
-            return res.status(404).json({
-                mensaje: "No se pudo crear."
+        try{
+    
+            const tipoReclamoEliminado = await this.TiposReclamosService.eliminar(idReclamosTipo);
+    
+            if (tipoReclamoEliminado.estado) {
+                res.status(200).send({
+                    esatado:"OK",
+                    mensaje: tipoReclamoEliminado.mensaje
+                });
+            }else{
+                res.status(404).send({
+                    esatado:"Falla",
+                    mensaje: tipoReclamoEliminado.mensaje
+                })
+            }
+            
+    
+        }catch(err){
+            res.status(500).json({
+                mensaje: "Error interno."
             })
         }
-
-        res.status(200).json({
-            mensaje: "Tipo reclamo creado."
-        });
-
-    }catch (err) {
-        res.status(500).json({
-            mensaje: "Error interno."
-        });
-    }
-}
-
-// DELETE
-export const deleteTiposReclamoso = async (req, res) => {
-    try{
-        const {idReclamosTipo} = req.params;
-
-        const sql = "UPDATE `reclamos_tipo` SET activo = 0 WHERE idReclamosTipo = ?";
-        const [result] = await conexion.query(sql, idReclamosTipo);
-
-        if(result.affectedRows === 0){
-            return res.status(404).json({
-                mensaje: "No se pudo eliminar."
-            })
-        }
-
-        res.status(200).json({
-            mensaje: "Tipo reclamo eliminado."
-        });
-
-    }catch(err){
-        res.status(500).json({
-            mensaje: "Error interno."
-        })
     }
 }

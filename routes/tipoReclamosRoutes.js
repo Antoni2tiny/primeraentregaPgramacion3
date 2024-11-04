@@ -1,12 +1,14 @@
 import { Router } from 'express';
-import * as tipoReclamosController from '../controller/tipoReclamosController.js';
+import TiposReclamosController from '../controller/tipoReclamosController';
 
 const router = Router();
 
-router.get('/tipos-reclamos', tipoReclamosController.getAllTiposReclamos);
-router.get('/tipos-reclamos/:idReclamosTipo', tipoReclamosController.getReclamosTipoById);
-router.patch('/tipos-reclamos/:idReclamosTipo', tipoReclamosController.updateReclamosTipoById);
-router.post('/tipos-reclamos', tipoReclamosController.createTiposReclamos);
-router.delete('/tipos-reclamos/:idReclamosTipo', tipoReclamosController.deleteTiposReclamoso);
+const tipoReclamosController = new TiposReclamosController();
+
+router.get('/tipos-reclamos', tipoReclamosController.buscarTodos);
+router.get('/tipos-reclamos/:idReclamosTipo', tipoReclamosController.buscarPorId);
+router.patch('/tipos-reclamos/:idReclamosTipo', tipoReclamosController.modificar);
+router.post('/tipos-reclamos', tipoReclamosController.crear);
+router.delete('/tipos-reclamos/:idReclamosTipo', tipoReclamosController.eliminar);
 
 export default router;
